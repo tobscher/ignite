@@ -1971,17 +1971,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     client.release();
 
-                    client = null;
-
                     if (!retry)
                         sentMsgsCnt.increment();
                     else {
+                        clients.remove(node.id(), client);
+
                         ClusterNode node0 = getSpiContext().node(node.id());
 
                         if (node0 == null)
                             throw new IgniteCheckedException("Failed to send message to remote node " +
                                 "(node has left the grid): " + node.id());
                     }
+
+                    client = null;
                 }
                 while (retry);
             }
