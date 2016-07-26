@@ -134,6 +134,9 @@ public class IgniteCacheMessageRecoveryIdleConnection extends GridCommonAbstract
                     fut.get(10_000);
                 }
                 catch (IgniteException e) {
+                    log.error("Failed to execute update, will dump debug information" +
+                        " [err=" + e+ ", iter=" + iter + ']', e);
+
                     List<Ignite> nodes = IgnitionEx.allGridsx();
 
                     for (Ignite node : nodes)
