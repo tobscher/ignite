@@ -17,16 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -51,6 +56,12 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
 
+    /** */
+    private static final int SRVS = 5;
+
+    /** */
+    private static final int CLIENTS = 5;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -59,6 +70,10 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
+        cfg.setCacheConfiguration(
+            cacheConfiguration("cache1", TRANSACTIONAL),
+            cacheConfiguration("cache2", ATOMIC));
+
         return cfg;
     }
 
@@ -66,11 +81,11 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(5);
+        startGridsMultiThreaded(SRVS);
 
         client = true;
 
-        startGridsMultiThreaded(5, 5);
+        startGridsMultiThreaded(SRVS, CLIENTS);
     }
 
     /** {@inheritDoc} */
@@ -84,47 +99,86 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConnectionRecovery() throws Exception {
-        ignite(0).createCache(cacheConfiguration("cache1", TRANSACTIONAL));
-        ignite(0).createCache(cacheConfiguration("cache2", ATOMIC));
-
-        final Map<Integer, Integer> data = new HashMap<>();
+        final Map<Integer, Integer> data = new TreeMap<>();
 
         for (int i = 0; i < 500; i++)
             data.put(i, i);
 
         final AtomicInteger idx = new AtomicInteger();
 
-        final long stopTime = U.currentTimeMillis() + 10_000;
+        final long stopTime = U.currentTimeMillis() + 30_000;
+
+        final AtomicReference<CyclicBarrier> barrierRef = new AtomicReference<>();
+
+        final int TEST_THREADS = (CLIENTS + SRVS) * 2;
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                Ignite node = ignite(idx.incrementAndGet() % 10);
+                int idx0 = idx.getAndIncrement();
+                Ignite node = ignite(idx0 % (SRVS + CLIENTS));
+
+                Thread.currentThread().setName("test-thread-" + idx0 + "-" + node.name());
 
                 IgniteCache cache1 = node.cache("cache1").withAsync();
                 IgniteCache cache2 = node.cache("cache2").withAsync();
 
-                int cnt = 0;
+                int iter = 0;
 
                 while (U.currentTimeMillis() < stopTime) {
-                    cache1.putAll(data);
-                    cache1.future().get(30, SECONDS);
+                    try {
+                        cache1.putAll(data);
+                        cache1.future().get(15, SECONDS);
 
+                        cache2.putAll(data);
+                        cache2.future().get(15, SECONDS);
 
-                    cache2.putAll(data);
-                    cache2.future().get(5, SECONDS);
+                        CyclicBarrier b = barrierRef.get();
 
-                    log.info("Iteration: " + cnt++);
+                        if (b != null)
+                            b.await(15, SECONDS);
+                    }
+                    catch (Exception e) {
+                        synchronized (IgniteCacheConnectionRecoveryTest.class) {
+                            log.error("Failed to execute update, will dump debug information" +
+                                " [err=" + e+ ", iter=" + iter + ']', e);
+
+                            List<Ignite> nodes = IgnitionEx.allGridsx();
+
+                            for (Ignite node0 : nodes)
+                                ((IgniteKernal)node0).dumpDebugInfo();
+
+                            U.dumpThreads(log);
+                        }
+
+                        throw e;
+                    }
                 }
 
                 return null;
             }
-        }, 30, "test-thread");
+        }, TEST_THREADS, "test-thread");
 
         while  (System.currentTimeMillis() < stopTime) {
-            for (Ignite node : G.allGrids())
-                IgniteCacheMessageRecoveryAbstractTest.closeSessions(node);
+            boolean closed = false;
 
-            U.sleep(500);
+            for (Ignite node : G.allGrids()) {
+                if (IgniteCacheMessageRecoveryAbstractTest.closeSessions(node))
+                    closed = true;
+            }
+
+            if (closed) {
+                CyclicBarrier b = new CyclicBarrier(TEST_THREADS + 1, new Runnable() {
+                    @Override public void run() {
+                        barrierRef.set(null);
+                    }
+                });
+
+                barrierRef.set(b);
+
+                b.await();
+            }
+
+            U.sleep(50);
         }
 
         fut.get();
