@@ -27,9 +27,7 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Iterator;
@@ -1163,84 +1161,6 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         createFile(igfsSecondary, FILE, chunk);
 
         checkFileContent(igfs, FILE, chunk);
-    }
-
-    /**
-     * Ensure that no prefetch occurs in case not enough block are read sequentially.
-     *
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings({"ResultOfMethodCallIgnored", "ThrowableResultOfMethodCallIgnored"})
-    public void testOpenNoPrefetch() throws Exception {
-        create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
-
-        // Write enough data to the secondary file system.
-        final int blockSize = IGFS_BLOCK_SIZE;
-
-        int totalWritten = 0;
-        try (OutputStream out = igfsSecondary.openOutputStream(FILE.toString(), false)) {
-
-            while (totalWritten < blockSize * 2 + chunk.length) {
-                out.write(chunk);
-
-                totalWritten += chunk.length;
-            }
-        }
-
-        awaitFileClose(igfsSecondaryFileSystem, FILE);
-
-        // Read the first block.
-        int totalRead = 0;
-
-        IgfsInputStream in = igfs.open(FILE, blockSize);
-
-        final byte[] readBuf = new byte[1024];
-
-        while (totalRead + readBuf.length <= blockSize) {
-            in.read(readBuf);
-
-            totalRead += readBuf.length;
-        }
-
-        // Now perform seek.
-        in.seek(blockSize * 2);
-
-        // Read the third block.
-        totalRead = 0;
-
-        while (totalRead < totalWritten - blockSize * 2) {
-            in.read(readBuf);
-
-            totalRead += readBuf.length;
-        }
-
-        // Let's wait for a while because prefetch occurs asynchronously.
-        U.sleep(300);
-
-        // Remove the file from the secondary file system.
-        igfsSecondary.delete(FILE.toString(), false);
-
-        // Let's wait for file will be deleted.
-        U.sleep(300);
-
-        final IgfsInputStream in0 = in;
-
-        // Try reading the second block. Should fail.
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                in0.seek(blockSize);
-
-                try {
-                    in0.read(readBuf);
-                }
-                finally {
-                    U.closeQuiet(in0);
-                }
-
-                return null;
-            }
-        }, IOException.class, "Failed to read data due to secondary file system exception: ");
     }
 
     /**
