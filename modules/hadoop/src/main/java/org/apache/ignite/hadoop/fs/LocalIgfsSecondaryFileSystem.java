@@ -31,6 +31,7 @@ import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsParentNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
+import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
@@ -195,20 +196,21 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public void rename(IgfsPath src, IgfsPath dest) {
+        File srcFile = fileForPath(src);
+        File destFile = fileForPath(dest);
+
+        if (!srcFile.exists())
+            throw new IgfsPathNotFoundException("Failed to perform rename because source path not found: " + src);
+
+        if (srcFile.isDirectory() && destFile.isFile())
+            throw new IgfsPathIsNotDirectoryException("Failed to perform rename because destination path is " +
+                "directory and source path is file [src=" + src + ", dest=" + dest + ']');
+
         try {
-            File srcFile = fileForPath(src);
-            File destFile = fileForPath(dest);
-
-            if (!srcFile.exists())
-                throw new IOException("File not found: " + srcFile);
-
-            if (srcFile.isDirectory() && destFile.isFile())
-                throw new IOException("Failed rename directory to existing file: [src=" + src + ", dest=" + dest + ']');
-
             if (destFile.isDirectory())
                 Files.move(srcFile.toPath(), destFile.toPath().resolve(srcFile.getName()));
             else if(!srcFile.renameTo(destFile))
-                throw new IgfsException("Failed to rename (secondary file system returned false) " +
+                throw new IgfsException("Failed to perform rename (underlying file system returned false) " +
                     "[src=" + src + ", dest=" + dest + ']');
         }
         catch (IOException e) {
@@ -219,28 +221,22 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
     @Override public boolean delete(IgfsPath path, boolean recursive) {
-        try {
-            File f = fileForPath(path);
+        File f = fileForPath(path);
 
-            // TODO: IGNITE-3642.
-            if (!recursive || !f.isDirectory())
-                return f.delete();
-            else
-                return deleteDirectory(f);
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to delete file [path=" + path + ", recursive=" + recursive + "]");
-        }
+        // TODO: IGNITE-3642.
+        if (!recursive || !f.isDirectory())
+            return f.delete();
+        else
+            return deleteDirectory(f);
     }
 
     /**
      * Delete directory recursively.
      *
      * @param dir Directory.
-     * @throws IOException If fails.
      * @return {@code true} if successful.
      */
-    private boolean deleteDirectory(File dir) throws IOException {
+    private boolean deleteDirectory(File dir) {
         File[] entries = dir.listFiles();
 
         if (entries != null) {
@@ -249,7 +245,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
                     deleteDirectory(entry);
                 else if (entry.isFile()) {
                     if (!entry.delete())
-                        throw new IOException("Cannot remove file: " + entry);
+                        return false;
                 }
                 else
                     // TODO: IGNITE-3642.
@@ -258,7 +254,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         }
 
         if (!dir.delete())
-            throw new IOException("Cannot remove directory: " + dir);
+            return false;
 
         return true;
     }
@@ -266,7 +262,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public void mkdirs(IgfsPath path) {
         if (!mkdirs0(fileForPath(path)))
-            throw new IgniteException("Failed to make directories [path=" + path + "]");
+            throw new IgniteException("Failed to make directories (underlying file system returned false): " + path);
     }
 
     /** {@inheritDoc} */
@@ -396,11 +392,11 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
                 if (create)
                     return create0(path, false, bufSize);
                 else
-                    throw new IOException("File not found: " + path);
+                    throw new IgfsPathNotFoundException("Failed to append to file because it doesn't exist: " + path);
             }
         }
         catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to append file [path=" + path + ']');
+            throw handleSecondaryFsError(e, "Failed to append to file because it doesn't exist: " + path);
         }
     }
 
@@ -449,7 +445,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
                     String val = props.get(name);
 
                     if (val ==  null)
-                        throw new IllegalArgumentException("File property not found [path=" + path + ", name=" + name + ']');
+                        throw new IllegalArgumentException("Property not found [path=" + path + ", name=" + name + ']');
 
                     return val;
                 }
@@ -617,22 +613,23 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      * @return Output stream.
      */
     private OutputStream create0(IgfsPath path, boolean overwrite, int bufSize) {
+        File file = fileForPath(path);
+
+        boolean exists = file.exists();
+
+        if (exists) {
+            if (!overwrite)
+                throw new IgfsPathAlreadyExistsException("Failed to create a file because it already exists: " + path);
+        }
+        else {
+            File parent = file.getParentFile();
+
+            if (!mkdirs0(parent))
+                throw new IgfsException("Failed to create parent directory for file (underlying file system " +
+                    "returned false): " + path);
+        }
+
         try {
-            File file = fileForPath(path);
-
-            boolean exists = file.exists();
-
-            if (exists) {
-                if (!overwrite)
-                    throw new IOException("File already exists.");
-            }
-            else {
-                File parent = file.getParentFile();
-
-                if (!mkdirs0(parent))
-                    throw new IOException("Failed to create parent directory: " + parent);
-            }
-
             return new BufferedOutputStream(new FileOutputStream(file), bufSize);
         }
         catch (IOException e) {
