@@ -597,7 +597,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
             path = path.substring(workDir.length(), path.length());
 
-            assert !path.startsWith("/") : "Path is not located in the work directory [workDir=" + workDir +
+            assert path.startsWith("/") : "Path is not located in the work directory [workDir=" + workDir +
                 "path=" + f + ']';
         }
 
