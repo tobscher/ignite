@@ -17,24 +17,15 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.ParentNotDirectoryException;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathExistsException;
-import org.apache.hadoop.fs.PathIsNotEmptyDirectoryException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
-import org.apache.ignite.igfs.IgfsParentNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
 import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
-import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
-import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -59,53 +50,19 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** Default buffer size. */
     private static final int DFLT_BUF_SIZE = 8 * 1024;
 
-    /** The default user name. It is used if no user context is set. */
-    private String dfltUsrName = IgfsUtils.fixUserName(null);
-
-    /** Factory. */
-    private HadoopFileSystemFactory fsFactory;
-
     /** Path that will be added to each passed path. */
     private String workDir;
-
-    /**
-     * Default constructor.
-     */
-    public LocalIgfsSecondaryFileSystem() {
-        CachingHadoopFileSystemFactory fsFactory0 = new CachingHadoopFileSystemFactory();
-
-        fsFactory0.setUri("file:///");
-
-        fsFactory = fsFactory0;
-    }
 
     /**
      * Heuristically checks if exception was caused by invalid HDFS version and returns appropriate exception.
      *
      * @param e Exception to check.
-     * @param detailMsg Detailed error message.
+     * @param msg Detailed error message.
      * @return Appropriate exception.
      */
-    private IgfsException handleSecondaryFsError(IOException e, String detailMsg) {
-        return cast(detailMsg, e);
-    }
-
-    /**
-     * Cast IO exception to IGFS exception.
-     *
-     * @param msg Error message.
-     * @param e IO exception.
-     * @return IGFS exception.
-     */
-    public static IgfsException cast(String msg, IOException e) {
+    private IgfsException handleSecondaryFsError(IOException e, String msg) {
         if (e instanceof FileNotFoundException)
             return new IgfsPathNotFoundException(e);
-        else if (e instanceof ParentNotDirectoryException)
-            return new IgfsParentNotDirectoryException(msg, e);
-        else if (e instanceof PathIsNotEmptyDirectoryException)
-            return new IgfsDirectoryNotEmptyException(e);
-        else if (e instanceof PathExistsException)
-            return new IgfsPathAlreadyExistsException(msg, e);
         else
             return new IgfsException(msg, e);
     }
@@ -332,54 +289,18 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public long usedSpaceSize() {
-        try {
-            // TODO: IGNITE-3651.
-            // We don't use FileSystem#getUsed() since it counts only the files
-            // in the filesystem root, not all the files recursively.
-            return fileSystemForUser().getContentSummary(new Path("/")).getSpaceConsumed();
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to get used space size of file system.");
-        }
-    }
-
-    /**
-     * Gets the FileSystem for the current context user.
-     *
-     * @return the FileSystem instance, never null.
-     */
-    private FileSystem fileSystemForUser() {
-        String user = IgfsUserContext.currentUser();
-
-        if (F.isEmpty(user))
-            user = IgfsUtils.fixUserName(dfltUsrName);
-
-        assert !F.isEmpty(user);
-
-        try {
-            return fsFactory.get(user);
-        }
-        catch (IOException ioe) {
-            throw new IgniteException(ioe);
-        }
+        throw new UnsupportedOperationException("usedSpaceSize operation is not yet supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        if (fsFactory == null)
-            fsFactory = new CachingHadoopFileSystemFactory();
-
-        if (fsFactory instanceof LifecycleAware)
-            ((LifecycleAware)fsFactory).start();
-
         if (workDir != null)
             workDir = new File(workDir).getAbsolutePath();
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
-        if (fsFactory instanceof LifecycleAware)
-            ((LifecycleAware)fsFactory).stop();
+        // No-op.
     }
 
     /**
