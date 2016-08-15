@@ -214,7 +214,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
                     "[src=" + src + ", dest=" + dest + ']');
         }
         catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to rename [src=" + src + ", dest="+ dest + ']');
+            throw handleSecondaryFsError(e, "Failed to rename [src=" + src + ", dest=" + dest + ']');
         }
     }
 
@@ -253,10 +253,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
             }
         }
 
-        if (!dir.delete())
-            return false;
-
-        return true;
+        return dir.delete();
     }
 
     /** {@inheritDoc} */
@@ -377,6 +374,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         // TODO: IGNITE-3648.
         return create0(path, overwrite, bufSize);
     }
+
     /** {@inheritDoc} */
     @Override public OutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) {
@@ -402,76 +400,17 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public IgfsFile info(final IgfsPath path) {
-        try {
-            // TODO: IGNITE-3650.
-            final FileStatus status = fileSystemForUser().getFileStatus(convert(path));
+        File f = fileForPath(path);
 
-            if (status == null)
-                return null;
-
-            final Map<String, String> props = properties(status);
-
-            return new IgfsFile() {
-                @Override public IgfsPath path() {
-                    return path;
-                }
-
-                @Override public boolean isFile() {
-                    return status.isFile();
-                }
-
-                @Override public boolean isDirectory() {
-                    return status.isDirectory();
-                }
-
-                @Override public int blockSize() {
-                    // By convention directory has blockSize == 0, while file has blockSize > 0:
-                    return isDirectory() ? 0 : (int)status.getBlockSize();
-                }
-
-                @Override public long groupBlockSize() {
-                    return status.getBlockSize();
-                }
-
-                @Override public long accessTime() {
-                    return status.getAccessTime();
-                }
-
-                @Override public long modificationTime() {
-                    return status.getModificationTime();
-                }
-
-                @Override public String property(String name) throws IllegalArgumentException {
-                    String val = props.get(name);
-
-                    if (val ==  null)
-                        throw new IllegalArgumentException("Property not found [path=" + path + ", name=" + name + ']');
-
-                    return val;
-                }
-
-                @Nullable @Override public String property(String name, @Nullable String dfltVal) {
-                    String val = props.get(name);
-
-                    return val == null ? dfltVal : val;
-                }
-
-                @Override public long length() {
-                    return status.getLen();
-                }
-
-                /** {@inheritDoc} */
-                @Override public Map<String, String> properties() {
-                    return props;
-                }
-            };
-        }
-        catch (FileNotFoundException ignore) {
+        if (!f.exists())
             return null;
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to get file status [path=" + path + "]");
-        }
+
+        boolean isDir = f.isDirectory();
+
+        if (isDir)
+            return new LocalFileSystemIgfsFile(path, false, true, 0, f.lastModified(), 0, null);
+        else
+            return new LocalFileSystemIgfsFile(path, f.isFile(), false, 0, f.lastModified(), f.length(), null);
     }
 
     /** {@inheritDoc} */
@@ -489,6 +428,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /**
      * Gets the FileSystem for the current context user.
+     *
      * @return the FileSystem instance, never null.
      */
     private FileSystem fileSystemForUser() {
@@ -513,7 +453,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
             fsFactory = new CachingHadoopFileSystemFactory();
 
         if (fsFactory instanceof LifecycleAware)
-            ((LifecycleAware) fsFactory).start();
+            ((LifecycleAware)fsFactory).start();
 
         workDir = new File(workDir).getAbsolutePath();
 
@@ -523,7 +463,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
         if (fsFactory instanceof LifecycleAware)
-             ((LifecycleAware)fsFactory).stop();
+            ((LifecycleAware)fsFactory).stop();
     }
 
     /**

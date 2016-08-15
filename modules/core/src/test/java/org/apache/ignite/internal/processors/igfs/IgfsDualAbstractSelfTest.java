@@ -1173,7 +1173,8 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
 
         // Write enough data to the secondary file system.
-        final int blockSize = igfs.info(FILE).blockSize();
+        int blockSize0 = igfs.info(FILE).blockSize();
+        final int blockSize = blockSize0 != 0 ? blockSize0 : 8 * 1024;
 
         int totalWritten = 0;
         try (OutputStream out = igfsSecondary.openOutputStream(FILE.toString(), false)) {
