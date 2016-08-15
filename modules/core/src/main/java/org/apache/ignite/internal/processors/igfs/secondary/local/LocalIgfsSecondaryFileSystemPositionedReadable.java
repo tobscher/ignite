@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop.fs;
+package org.apache.ignite.internal.processors.igfs.secondary.local;
 
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 

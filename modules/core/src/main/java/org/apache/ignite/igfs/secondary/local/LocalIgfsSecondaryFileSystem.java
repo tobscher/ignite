@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop.fs;
+package org.apache.ignite.igfs.secondary.local;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.igfs.IgfsException;
@@ -26,6 +26,8 @@ import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemIgfsFile;
+import org.apache.ignite.internal.processors.igfs.secondary.local.LocalIgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;

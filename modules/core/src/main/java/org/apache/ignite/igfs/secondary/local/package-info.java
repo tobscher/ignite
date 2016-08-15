@@ -15,16 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.igfs;
-
 /**
- * DUAL_SYNC mode.
+ * <!-- Package description. -->
+ * Contains APIs for IGFS secondary file system.
  */
-public class LocalSecondaryFileSystemDualSyncSelfTest extends LocalSecondaryFileSystemDualAbstractSelfTest {
-    /**
-     * Constructor.
-     */
-    public LocalSecondaryFileSystemDualSyncSelfTest() {
-        super(IgfsMode.DUAL_SYNC);
-    }
-}
+package org.apache.ignite.igfs.secondary.local;

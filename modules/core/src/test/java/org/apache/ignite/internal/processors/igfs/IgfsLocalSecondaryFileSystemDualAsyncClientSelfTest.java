@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.igfs;
+package org.apache.ignite.internal.processors.igfs;
 
 /**
- * DUAL_SYNC mode.
+ * DUAL_ASYNC mode.
  */
-public class LocalSecondaryFileSystemDualSyncClientSelfTest extends LocalSecondaryFileSystemDualSyncSelfTest {
+public class IgfsLocalSecondaryFileSystemDualAsyncClientSelfTest extends IgfsLocalSecondaryFileSystemDualAsyncSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean client() {
         return true;

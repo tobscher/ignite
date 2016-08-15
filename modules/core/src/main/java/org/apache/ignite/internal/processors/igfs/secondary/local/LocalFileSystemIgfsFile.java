@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop.fs;
-
-import java.util.Collections;
-import java.util.Map;
+package org.apache.ignite.internal.processors.igfs.secondary.local;
 
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * Implementation of the IgfsFile interface for the local filesystem.
  */
-class LocalFileSystemIgfsFile implements IgfsFile {
+public class LocalFileSystemIgfsFile implements IgfsFile {
     /** Path. */
     private final IgfsPath path;
 
@@ -56,7 +56,7 @@ class LocalFileSystemIgfsFile implements IgfsFile {
      * @param len File length in bytes.
      * @param props Properties.
      */
-    LocalFileSystemIgfsFile(IgfsPath path, boolean isFile, boolean isDir, int blockSize,
+    public LocalFileSystemIgfsFile(IgfsPath path, boolean isFile, boolean isDir, int blockSize,
         long modTime, long len, Map<String, String> props) {
 
         assert !isDir || blockSize == 0 : "blockSize must be 0 for dirs. [blockSize=" + blockSize + ']';

@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.igfs;
+package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.hadoop.fs.LocalIgfsSecondaryFileSystem;
+import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
-import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
+import org.apache.ignite.igfs.secondary.local.LocalIgfsSecondaryFileSystem;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.io.File;
@@ -27,7 +27,7 @@ import java.io.File;
 /**
  * Abstract test for Hadoop 1.0 file system stack.
  */
-public abstract class LocalSecondaryFileSystemDualAbstractSelfTest extends IgfsDualAbstractSelfTest {
+public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends IgfsDualAbstractSelfTest {
     /** */
     private static final String FS_WORK_DIR = U.getIgniteHome() + File.separatorChar + "work"
         + File.separatorChar + "fs";
@@ -35,7 +35,7 @@ public abstract class LocalSecondaryFileSystemDualAbstractSelfTest extends IgfsD
     /** Constructor.
      * @param mode IGFS mode.
      */
-    public LocalSecondaryFileSystemDualAbstractSelfTest(IgfsMode mode) {
+    public IgfsLocalSecondaryFileSystemDualAbstractSelfTest(IgfsMode mode) {
         super(mode);
     }
 
@@ -54,7 +54,7 @@ public abstract class LocalSecondaryFileSystemDualAbstractSelfTest extends IgfsD
 
         second.setWorkDirectory(workDir.getAbsolutePath());
 
-        igfsSecondary = new LocalIgfsSecondaryFileSystemTestAdapter(workDir);
+        igfsSecondary = new IgfsLocalSecondaryFileSystemTestAdapter(workDir);
 
         return second;
     }

@@ -15,10 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.igfs;
+package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.internal.processors.igfs.IgfsEx;
-import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemTestAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 
 import java.io.File;
@@ -35,14 +33,14 @@ import java.util.Map;
 /**
  * Adapter for local secondary file system.
  */
-public class LocalIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFileSystemTestAdapter {
+public class IgfsLocalSecondaryFileSystemTestAdapter implements IgfsSecondaryFileSystemTestAdapter {
     /** */
     private final String workDir;
 
     /**
      * @param workDir Work dir.
      */
-    public LocalIgfsSecondaryFileSystemTestAdapter(final File workDir) {
+    public IgfsLocalSecondaryFileSystemTestAdapter(final File workDir) {
         this.workDir = workDir.getAbsolutePath();
     }
 
@@ -79,13 +77,11 @@ public class LocalIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFil
 
     /** {@inheritDoc} */
     @Override public Map<String, String> properties(final String path) throws IOException {
-        // TODO: Create ticket for this!
         throw new UnsupportedOperationException("properties");
     }
 
     /** {@inheritDoc} */
     @Override public String permissions(String path) throws IOException {
-        // TODO: Create ticket for this!
         throw new UnsupportedOperationException("permissions");
     }
 
@@ -104,7 +100,6 @@ public class LocalIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFil
 
     /** {@inheritDoc} */
     @Override public T2<Long, Long> times(String path) throws IOException {
-        // TODO: Create ticket for this!
         throw new UnsupportedOperationException("times");
     }
 
