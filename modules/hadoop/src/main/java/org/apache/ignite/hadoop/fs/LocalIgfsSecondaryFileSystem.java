@@ -64,7 +64,7 @@ import java.util.Map;
 public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware {
     /** Default buffer size. */
     // TODO: IGNITE-3643.
-    public static final int DFLT_BUF_SIZE = 8 * 1024;
+    private static final int DFLT_BUF_SIZE = 8 * 1024;
 
     /** The default user name. It is used if no user context is set. */
     private String dfltUsrName = IgfsUtils.fixUserName(null);
@@ -74,9 +74,6 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** Path that will be added to each passed path. */
     private String workDir;
-
-    /** Buffer size. */
-    private int bufSize = DFLT_BUF_SIZE;
 
     /**
      * Default constructor.
@@ -365,7 +362,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public OutputStream create(IgfsPath path, boolean overwrite) {
-        return create0(path, overwrite, bufSize);
+        return create0(path, overwrite, DFLT_BUF_SIZE);
     }
 
     /** {@inheritDoc} */
