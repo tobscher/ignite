@@ -1407,6 +1407,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateNoClose() throws Exception {
+        if (dual)
+            return;
+
         create(igfs, paths(DIR, SUBDIR), null);
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
@@ -1433,6 +1436,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateRenameNoClose() throws Exception {
+        if (dual)
+            return;
+
         create(igfs, paths(DIR, SUBDIR), null);
 
         IgfsOutputStream os = null;
@@ -1455,6 +1461,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateRenameParentNoClose() throws Exception {
+        if (dual)
+            return;
+
         create(igfs, paths(DIR, SUBDIR), null);
 
         IgfsOutputStream os = null;
@@ -1477,6 +1486,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateDeleteNoClose() throws Exception {
+        if (dual)
+            return;
+
         create(igfs, paths(DIR, SUBDIR), null);
 
         IgfsOutputStream os = null;
@@ -1528,6 +1540,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateDeleteParentNoClose() throws Exception {
+        if (dual)
+            return;
+
         create(igfs, paths(DIR, SUBDIR), null);
 
         IgfsOutputStream os = null;
@@ -1579,6 +1594,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateUpdateNoClose() throws Exception {
+        if (dual)
+            return;
+
         if(!propertiesSupported())
             return;
 
@@ -1920,6 +1938,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendNoClose() throws Exception {
+        if (dual)
+            return;
+
         if (appendSupported()) {
             create(igfs, paths(DIR, SUBDIR), null);
 
@@ -1951,6 +1972,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendRenameNoClose() throws Exception {
+        if (dual)
+            return;
+
         if (appendSupported()) {
             create(igfs, paths(DIR, SUBDIR), null);
 
@@ -1976,6 +2000,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendRenameParentNoClose() throws Exception {
+        if (dual)
+            return;
+
         if (appendSupported()) {
             create(igfs.asSecondary(), paths(DIR, SUBDIR), null);
 
@@ -2001,6 +2028,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendDeleteNoClose() throws Exception {
+        if (dual)
+            return;
+
         if (appendSupported()) {
             create(igfs, paths(DIR, SUBDIR), null);
 
@@ -2053,6 +2083,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendDeleteParentNoClose() throws Exception {
+        if (dual)
+            return;
+
         if (appendSupported()) {
             create(igfs, paths(DIR, SUBDIR), null);
 
@@ -2105,6 +2138,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendUpdateNoClose() throws Exception {
+        if (dual)
+            return;
+
         if (appendSupported()) {
             Map<String, String> props = properties("owner", "group", "0555");
 
