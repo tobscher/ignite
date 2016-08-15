@@ -456,8 +456,6 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
             ((LifecycleAware)fsFactory).start();
 
         workDir = new File(workDir).getAbsolutePath();
-
-        assert !workDir.endsWith("/") : workDir;
     }
 
     /** {@inheritDoc} */
