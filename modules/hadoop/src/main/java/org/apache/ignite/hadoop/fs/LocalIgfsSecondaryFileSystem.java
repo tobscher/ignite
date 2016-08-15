@@ -546,24 +546,6 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     }
 
     /**
-     * Get buffer size.
-     *
-     * @return Buffer size.
-     */
-    public int getBufferSize() {
-        return bufSize;
-    }
-
-    /**
-     * Set buffer size.
-     *
-     * @param bufSize Buffer size.
-     */
-    public void setBufferSize(int bufSize) {
-        this.bufSize = bufSize;
-    }
-
-    /**
      * Create file for IGFS path.
      *
      * @param path IGFS path.
