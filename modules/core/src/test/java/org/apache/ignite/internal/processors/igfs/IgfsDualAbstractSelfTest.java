@@ -1185,7 +1185,10 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
             }
         }
 
-        awaitFileClose(igfsSecondaryFileSystem, FILE);
+        if (propertiesSupported())
+            awaitFileClose(igfsSecondaryFileSystem, FILE);
+        else
+            Thread.sleep(1000);
 
         // Read the first two blocks.
         int totalRead = 0;
